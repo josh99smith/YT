@@ -132,7 +132,7 @@ async function loadLiveVideos(query = '') {
         if (liveVideos.length > 0 && playerReady) {
             changeChannel(0);
             populateTVGuidePanel(); // Populate TV guide after loading videos
-            initializeTimeBar(); // Initialize Time Bar after loading channels
+            initializeTimeBar(); // Initialize Time Bar after loadirrng channels
         } else if (liveVideos.length === 0) {
             alert('No live videos found.');
         }
