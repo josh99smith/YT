@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Responsive Retro TV</title>
+    <!-- Preconnect to Google Fonts for improved performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Import Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,600&family=Kaushan+Script&family=Noto+Sans:ital,wght@0,900;1,900&family=Vina+Sans&display=swap" rel="stylesheet">
+    <!-- Link to External CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Static Overlay for Channel Switching Effects -->
+    <div class="static-overlay" aria-hidden="true"></div>
+
+    <!-- YouTube Video Player -->
+    <div id="youtube-player" aria-label="YouTube Video Player"></div>
+
+    <!-- Volume Bars Overlay -->
+    <div class="volume-overlay" aria-label="Volume Level">
+        <span class="volume-label">Volume</span>
+        <div class="volume-bars">
+            <!-- 20 Volume Bars -->
+            <!-- These can be generated dynamically if preferred -->
+            <!-- Using JavaScript to generate for brevity -->
+        </div>
+        <div class="volume-display">50%</div>
+    </div>
+
+    <!-- Video Info Overlay -->
+    <div class="video-info-overlay" aria-label="Video Information">
+        <span class="channel-name">Channel Name</span>
+        <span class="video-title">Video Title</span>
+    </div>
+
+    <!-- Remote Control Overlay -->
+    <div class="remote" id="remote-control" aria-label="Remote Control">
+        <!-- Drag Handle -->
+        <div class="drag-handle" id="drag-handle" aria-label="Drag Handle">
+            &#x2630; <!-- Hamburger icon -->
+        </div>
+        <button class="remote-button" id="retro-mode" aria-label="Toggle Retro Mode">
+            Retro Mode
+        </button>
+        <div class="volume-controls">
+            <button class="remote-button-v" id="volume-down" aria-label="Volume Down">Volume<br> -</button>
+            <button class="remote-button-v" id="volume-up" aria-label="Volume Up">Volume +</button>
+        </div>
+        <button class="remote-button" id="next-channel" aria-label="Next Channel">
+            &#x25B2; <!-- Up Arrow -->
+        </button>
+        <button class="remote-button-guide" id="hide-guide2" aria-label="Toggle Guide">
+            GUIDE
+        </button>
+        <button class="remote-button" id="previous-channel" aria-label="Previous Channel">
+            &#x25BC; <!-- Down Arrow -->
+        </button>
+    </div>
+
+    <!-- Toggle Remote Control Button -->
+    <button class="toggle-remote" id="toggle-remote">Hide Remote</button>
+    <button style="margin-top:50px" class="toggle-remote" id="hide-guide">Guide</button>
+
+    <!-- TV Guide Panel -->
+    <div class="tv-guide-panel" aria-label="TV Guide Channel Listings">
+        <!-- Time Bar -->
+        <div class="time-bar" aria-label="Current Time and Upcoming Blocks">
+            <!-- Time blocks will be populated here dynamically -->
+        </div>
+        <div class="channel-list">
+            <!-- Channels will be populated here dynamically -->
+        </div>
+    </div>
+
+    <!-- Channel Number Overlay -->
+    <div id="channel-number-overlay" class="channel-number-overlay" aria-label="Channel Number"></div>
+
+    <!-- Loading Indicator -->
+    <div class="loading-indicator" id="loading-indicator" aria-label="Loading">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Audio Elements for Sound Effects -->
+    <!-- Button Click Sound -->
+    <audio id="button-sound" src="assets/button-sound.ogg" preload="auto"></audio>
+    <!-- Static Sound -->
+    <audio id="static-sound" src="assets/static.ogg" preload="auto"></audio>
+
+    <!-- Load the YouTube IFrame API -->
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <!-- Link to External JavaScript -->
+    <script src="script.js" defer></script>
+</body>
+</html>

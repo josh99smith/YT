@@ -1,0 +1,696 @@
+/* Reset default margins and paddings */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Body Styling */
+body {
+    background-color: #222;
+    font-family: 'Silkscreen', serif; /* Retro font */
+    overflow: hidden; /* Prevent default scrollbars */
+    position: relative;
+    height: 100vh;
+    width: 100vw;
+}
+
+/* Full-Screen Video Player */
+#youtube-player {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1;
+}
+
+/* Static Overlay (for channel switching effects) */
+.static-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: url('https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExd2E2MWdnajA0c3hoa3JvOTVndDJjbjk5MGxibmt2OTFia2puemt5MyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/Yqn9tE2E00k4U/giphy.webp') center center / cover;
+    display: none;
+    z-index: 2;
+    pointer-events: none; /* Allow interactions with video */
+}
+
+/* Retro Filter Applied to Video */
+.retro-filter {
+    filter: sepia(0.4) contrast(1.2) brightness(0.9) saturate(1.5) hue-rotate(-10deg) blur(0.5px);
+}
+
+/* Volume Overlay Styles */
+.volume-overlay {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%; /* Span 90% of the viewport width */
+    max-width: 1200px; /* Maximum width for large screens */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    z-index: 10;
+    pointer-events: none; /* Allows clicks to pass through */
+    opacity: 0; /* Hidden by default */
+    visibility: hidden;
+    transition: opacity 0.5s ease, visibility 0.5s ease;
+}
+
+/* When Visible */
+.volume-overlay.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Volume Label */
+.volume-label {
+    color: #00FF00; /* Retro green */
+    font-size: 24px;
+    margin-bottom: 10px;
+    text-shadow: 0 0 5px #000;
+    font-weight: 400;
+}
+
+/* Volume Bars Container */
+.volume-bars {
+    display: flex;
+    justify-content: space-between; /* Evenly distribute bars */
+    align-items: flex-end;
+    width: 100%; /* Span the entire width */
+    height: 100px; /* Height of the volume bars */
+}
+
+/* Individual Volume Bars */
+.volume-bar {
+    width: 10px; /* Fixed width */
+    height: 0%; /* Initial height */
+    background-color: #555; /* Inactive color */
+    transition: height 0.3s ease, background-color 0.3s ease;
+    border-radius: 2px;
+}
+
+/* Active Volume Bars */
+.volume-bar.active {
+    background-color: #00FF00; /* Retro green */
+    height: 100%; /* Full height when active */
+}
+
+/* Volume Percentage Display */
+.volume-display {
+    color: #00FF00;
+    font-family: "Silkscreen", serif;
+    font-weight: 400;
+    font-size: 18px;
+    background-color: rgba(0, 0, 0, 0.5);
+    padding: 4px 8px;
+    border-radius: 4px;
+    z-index: 4;
+    text-shadow: 0 0 3px #000;
+}
+
+/* Video Info Overlay Styles */
+.video-info-overlay {
+    position: fixed;
+    top: 80px; /* Positioned below the top edge */
+    left: 30px; /* Slight padding from the left edge */
+    background-color: rgba(0, 0, 0, 0.6); /* Semi-transparent background */
+    color: #00FF00;
+    text-shadow:
+        0 0 2px #00FF00,
+        0 0 2px #00FF00,
+        0 0 2px #00FF00,
+        0 0 2px #00FF00;
+    padding: 10px 15px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.7);
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    z-index: 4;
+    opacity: 0; /* Hidden by default */
+    visibility: hidden;
+    transition: opacity 0.5s ease, visibility 0.5s ease;
+    font-family: 'Silkscreen', serif; /* Retro font */
+}
+
+/* When Visible */
+.video-info-overlay.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Channel Name Styling */
+.channel-name {
+    font-size: 18px;
+    font-weight: 700;
+    text-shadow: 0 0 2px #000;
+}
+
+/* Video Title Styling */
+.video-title {
+    font-size: 14px;
+    font-weight: 400;
+    text-shadow: 0 0 2px #000;
+}
+
+/* TV Guide Panel Styles */
+.tv-guide-panel {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    max-height: 50%; /* Adjust as needed */
+    background-color: rgba(19, 45, 76, 0.9); /* Semi-transparent dark blue */
+    color: #FFD700; /* Gold color for text */
+    overflow-y: auto; /* Enable vertical scrolling with visible scrollbars */
+   
+    z-index: 3;
+    border-top: 6px groove #FFFFFF; /* Decorative top border */
+    display: none; /* Hidden by default; can toggle visibility */
+    animation: slideUp 0.5s forwards;
+    font-family: "DM Sans", sans-serif;
+    font-weight: 900;
+    font-style: normal;
+  
+}
+
+/* Show TV Guide Panel */
+.tv-guide-panel.visible {
+    display: block;
+    overflow: hidden;
+        scrollbar-width: thin; /* For Firefox */
+    scrollbar-color: #1800cc00 #00000000; 
+ 
+}
+
+/* Channel List Styling */
+.channel-list {
+    max-height: 70vh; /* Adjust as needed */
+    overflow-y: auto; /* Enable vertical scrolling */
+    scrollbar-width: thin; /* For Firefox */
+    scrollbar-color: #002b6c #3c84e81f; /* For Firefox */
+ 
+    overflow-y: scroll; /* Enable vertical scrolling */
+}
+
+/* Individual Channel Entry */
+.channel-entry {
+    display: flex;
+    height:100px;
+    align-items: center;
+    padding: 0px 16px;
+   
+   
+   border-left: 2px solid white;
+   border-top: 2px solid white;
+
+ 
+    transition: background-color 0.3s, transform 0.2s;
+    cursor: pointer;
+}
+
+.channel-entry.active {
+    background-color: rgba(78, 141, 216, 0.7); /* Darker blue */
+   
+}
+
+/* Container for Channel Number and Name */
+.channel-info {
+    display: flex;
+    align-items: left;
+    
+    height:100%;
+  width: 20%;
+    flex-direction: column;  
+ border-right: 2px solid white;
+  
+}
+
+/* Channel Number Box */
+.channel-number {
+    width: 40px; /* Fixed width for alignment */
+    height: 40px;
+    
+    
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 30px;
+    color: #FFD700;
+    
+}
+
+/* Channel Name Box */
+.channel-name-list {
+    
+    padding: 8px 12px;
+       font-size: 20px;
+    font-weight: 600;
+    color: #FFD700;
+    flex: 1; /* Take up remaining space */
+ 
+ 
+}
+
+/* Video Title Box */
+.video-title-box {
+   
+    padding: 8px 12px;
+    border-radius: 4px;
+    max-width: 60%; /* Adjust as needed */
+    color: #FFFFFF;
+    font-style: italic;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Hover Effects for Channel Entries */
+.channel-entry:hover {
+    background-color: rgba(255, 215, 0, 0.3); /* Darker gold on hover */
+}
+
+/* Scrollbar Styling for Channel List */
+.tv-guide-panel .channel-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.tv-guide-panel .channel-list::-webkit-scrollbar-track {
+    background: rgba(255, 215, 0, 0.2);
+}
+
+.tv-guide-panel .channel-list::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 215, 0, 0.6);
+    border-radius: 4px;
+}
+
+/* Auto-Scroll Animation */
+@keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+}
+
+/* Remote Control Overlay */
+.remote {
+    position: fixed; /* Fixed positioning for consistent movement */
+    left: 30px; /* Initial left position */
+    top: 30px; /* Initial top position */
+    background-color: rgba(34, 34, 34, 0.9); /* Darker retro look */
+    color: #ffcc00;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 0 25px rgba(0, 0, 0, 0.8);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    z-index: 4;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+    font-family: 'Silkscreen', serif; /* Retro font */
+    cursor: grab; /* Indicate draggable */
+    width: 200px; /* Fixed width */
+}
+
+/* Active State for Remote (Dragging) */
+.remote.active {
+    cursor: grabbing;
+    transform: scale(1.05);
+    transition: transform 0.2s;
+}
+
+/* Hidden Remote Controls */
+.remote.hidden {
+    opacity: 0;
+    visibility: hidden;
+}
+
+/* Drag Handle Styles */
+.drag-handle {
+    width: 100%;
+    text-align: center;
+    cursor: grab; /* Indicate draggable */
+    padding-bottom: 10px;
+    border-bottom: 1px solid #ffcc00; /* Separator line */
+    margin-bottom: 10px;
+    user-select: none; /* Prevent text selection */
+    font-size: 18px;
+}
+
+.drag-handle:active {
+    opacity: 0.7;
+}
+
+/* Remote Control Buttons */
+.remote-button,
+.remote-button-guide {
+    width: 100%; /* Full width within the container */
+    padding: 10px 0; /* Vertical padding */
+    font-size: 16px;
+    border: none;
+    background-color: #444;
+    color: #ffcc00;
+    border-radius: 25px;
+    cursor: pointer;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.5), 0 0 10px rgba(0,0,0,0.5);
+    transition: background-color 0.3s, transform 0.2s;
+    text-align: center;
+}
+
+.remote-button-guide {
+    width: auto; /* Adjust width as needed */
+    padding: 10px 15px; /* Adjust padding */
+    background-color: rgba(159,49,54,1); /* Specific color */
+    color: #ffffff;
+}
+
+.remote-button-v {
+    width: 100%; /* Full width within the container */
+    padding: 15px 15px; /* Vertical padding */
+    font-size: 16px;
+    border: none;
+    background-color: #444;
+    color: #ffcc00;
+    border-radius: 25px;
+    cursor: pointer;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.5), 0 0 10px rgba(0,0,0,0.5);
+    transition: background-color 0.3s, transform 0.2s;
+    text-align: center;
+}
+
+.remote-button:hover,
+.remote-button-v:hover,
+.remote-button-guide:hover,
+.drag-handle:hover {
+    background-color: #555;
+    transform: scale(1.05);
+}
+
+/* Button Press Effect */
+.remote-button:active,
+.remote-button-v:active,
+.remote-button-guide:active {
+    transform: scale(0.95);
+    transition: transform 0.1s;
+}
+
+/* Volume Controls Group */
+.volume-controls {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+}
+
+/* Toggle Remote Button */
+.toggle-remote {
+    position: fixed;
+    top: 30px;
+    right: 30px;
+    background-color: rgba(34, 34, 34, 0.9);
+    color: #fff;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    z-index: 5;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.7);
+    transition: background-color 0.3s, transform 0.2s;
+    font-family: 'Silkscreen', serif;
+    font-size: 16px;
+}
+
+.toggle-remote:hover {
+    background-color: #555;
+    transform: scale(1.05);
+}
+
+/* Toggle Retro Button */
+.toggle-retro {
+    position: fixed;
+    top: 80px;
+    right: 30px;
+    background-color: rgba(34, 34, 34, 0.9);
+    color: #fff;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    z-index: 5;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.7);
+    transition: background-color 0.3s, transform 0.2s;
+    font-family: 'Silkscreen', serif;
+    font-size: 16px;
+}
+
+.toggle-retro:hover {
+    background-color: #555;
+    transform: scale(1.05);
+}
+
+/* Channel Number Overlay Styles */
+.channel-number-overlay {
+    position: fixed;
+    top: 70px; /* Distance from the top */
+    right: 40px; /* Distance from the right */
+    background-color: transparent;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 80px; /* Adjust size as needed */
+    font-weight: 700;
+    text-align: center;
+    color: #00FF00;
+    text-shadow:
+        0 0 5px #00FF00,
+        0 0 5px #00FF00,
+        0 0 5px #00FF00,
+        0 0 5px #00FF00;
+    z-index: 5;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.5s ease, visibility 0.5s ease;
+}
+
+/* When Visible */
+.channel-number-overlay.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Responsive Font Size */
+@media (max-width: 768px) {
+    /* Adjust Channel Number Overlay */
+    .channel-number-overlay {
+        font-size: 36px; /* Smaller font on mobile */
+    }
+
+    /* Adjust Volume Overlay */
+    .volume-overlay {
+        width: 95%;
+        height: 80px;
+    }
+
+    .volume-label {
+        font-size: 20px;
+    }
+
+    .volume-bars {
+        height: 80px;
+    }
+
+    .volume-bar {
+        width: 8px;
+    }
+
+    .volume-display {
+        font-size: 16px;
+    }
+
+    /* Adjust Remote Control */
+    .remote {
+        left: 20px; /* Adjusted for smaller screens */
+        top: 20px;
+        padding: 15px;
+        gap: 10px;
+        width: 160px; /* Reduced width */
+    }
+
+    .remote-button,
+    .remote-button-v,
+    .remote-button-guide {
+        font-size: 14px;
+    }
+
+    .drag-handle {
+        font-size: 16px;
+        padding-bottom: 8px;
+        margin-bottom: 8px;
+    }
+
+    .toggle-remote,
+    .toggle-retro {
+        top: 20px;
+        right: 20px;
+        padding: 8px 12px;
+        font-size: 14px;
+    }
+
+    .video-info-overlay {
+        top: 60px; /* Adjusted for smaller screens */
+        left: 20px;
+        padding: 8px 12px;
+    }
+
+    .channel-name {
+        font-size: 12px;
+    }
+
+    .channel-info {
+     
+        
+      
+      width: 30%;
+    
+      
+    }
+
+    .video-title {
+       
+         width:40%;
+    }
+
+    /* TV Guide Panel Responsive */
+    .tv-guide-panel {
+        max-height: 50%; /* Reduced max height for smaller screens */
+        
+    }
+
+    .current-program {
+        
+    }
+
+    /* Adjust Channel Number Box for Mobile */
+    .channel-number {
+        width: 30px;
+        height: 30px;
+        font-size: 14px;
+    }
+
+    /* Adjust Video Title Box for Mobile */
+    .video-title-box {
+        
+        font-size: 14px;
+    }
+
+    .channel-name-list {
+    
+     
+           font-size: 14px;
+      
+     
+     
+    }
+
+    .time-block {
+       
+        font-size: 12px;
+        
+    
+      
+      
+      
+    }
+    
+    .time-block.current {
+        font-size: 15px;
+        
+    
+    }
+
+    .time-block.upcoming {
+        font-size: 12px;
+    
+    }
+
+    .time-bar {
+        font-size: 12px;
+    }
+    
+}
+
+/* Loading Indicator Styles */
+.loading-indicator {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 6;
+    display: none; /* Hidden by default */
+}
+
+.loading-indicator.visible {
+    display: block;
+}
+
+/* Spinner Styles */
+.spinner {
+    border: 8px solid rgba(255, 215, 0, 0.2);
+    border-top: 8px solid #FFD700;
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    animation: spin 1s linear infinite;
+}
+
+/* Spin Animation */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Existing CSS ... */
+
+/* Time Bar Styles */
+.time-bar {
+    display: flex;
+    align-items: center;
+    padding: 10px 20px;
+    background-color: rgba(78, 141, 216, 0.9); /* Semi-transparent dark blue */
+    border-bottom: 2px solid #FFD700; /* Gold border */
+    position: sticky;
+    top: 0;
+    z-index: 5;
+  color:white;
+}
+
+.time-block {
+    flex: 1;
+    text-align: center;
+    color: #FFD700;
+    font-size: 18px;
+    
+    margin: 0 5px;
+  
+  width:22%;
+  
+    border-radius: 4px;
+    transition: background-color 0.3s, transform 0.2s;
+}
+
+.time-block.current {
+    border: 3px inset white;
+    font-weight: bold;
+  color:white;
+
+}
+
+
+
+.time-bar.hidden {
+    display: none;
+}
+
