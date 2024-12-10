@@ -1,4 +1,4 @@
-// Global Variables
+// Global Variablesf
 let player;
 let liveVideos = [];
 let currentChannelIndex = 0;
