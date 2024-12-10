@@ -17,12 +17,13 @@ body {
 
 /* Full-Screen Video Player */
 #youtube-player {
-    position: fixed;
+    position: absolute;
     top: 0;
     left: 0;
     width: 100vw;
     height: 100vh;
     z-index: 1;
+
 }
 
 /* Static Overlay (for channel switching effects) */
@@ -171,7 +172,7 @@ body {
     overflow-y: auto; /* Enable vertical scrolling with visible scrollbars */
    
     z-index: 3;
-    border-top: 6px groove #FFFFFF; /* Decorative top border */
+    border-top: 3px solid #FFFFFF; /* Decorative top border */
     display: none; /* Hidden by default; can toggle visibility */
     animation: slideUp 0.5s forwards;
     font-family: "DM Sans", sans-serif;
@@ -300,8 +301,8 @@ body {
 /* Remote Control Overlay */
 .remote {
     position: fixed; /* Fixed positioning for consistent movement */
-    left: 30px; /* Initial left position */
-    top: 30px; /* Initial top position */
+    right: 30px; /* Initial left position */
+    top: 140px; /* Initial top position */
     background-color: rgba(34, 34, 34, 0.9); /* Darker retro look */
     color: #ffcc00;
     padding: 20px;
@@ -347,10 +348,29 @@ body {
     opacity: 0.7;
 }
 
+.remote-button-guide-top {
+    position: fixed;
+    top: 80px;
+    right: 30px;
+    width: 100px ;/* Full width within the container */
+padding: 10px 0; /* Vertical padding */
+font-size: 16px;
+border: none;
+background-color: rgba(159,49,54,1); /* Specific color */
+color: #ffffff;
+border-radius: 25px;
+cursor: pointer;
+box-shadow: inset 0 0 10px rgba(0,0,0,0.5), 0 0 10px rgba(0,0,0,0.5);
+transition: background-color 0.3s, transform 0.2s;
+text-align: center;
+z-index:5 ;
+}
+
+
 /* Remote Control Buttons */
 .remote-button,
 .remote-button-guide {
-    width: 100%; /* Full width within the container */
+    width: 200px ;/* Full width within the container */
     padding: 10px 0; /* Vertical padding */
     font-size: 16px;
     border: none;
@@ -517,6 +537,7 @@ body {
         padding: 15px;
         gap: 10px;
         width: 160px; /* Reduced width */
+        display:none;
     }
 
     .remote-button,
@@ -573,7 +594,7 @@ body {
         
     }
 
-    /* Adjust Channel Number Box for Mobile */
+    /* Adjust Channel Number Box for Mobile */sss
     .channel-number {
         width: 30px;
         height: 30px;
@@ -618,6 +639,14 @@ body {
 
     .time-bar {
         font-size: 12px;
+    }
+
+    #youtube-player {
+        position: static;
+     
+        width: 100vw;
+        height: 50vh;
+        z-index: 1;
     }
     
 }
@@ -694,3 +723,55 @@ body {
     display: none;
 }
 
+/* Category Bar Styles */
+.category-bar {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    padding: 10px 20px;
+    background-color: rgba(19, 45, 76, 0.9); /* Semi-transparent dark blue */
+    border-bottom: 2px solid #FFD700; /* Gold border */
+    position: sticky;
+    top: 0;
+    z-index: 6;
+    gap: 10px;
+    overflow-x: auto; /* Enable horizontal scrolling for smaller screens */
+    scrollbar-width: thin; /* For Firefox */
+    scrollbar-color: #FFD700 #3c84e81f;
+}
+
+.category-bar::-webkit-scrollbar {
+    height: 8px;
+}
+
+.category-bar::-webkit-scrollbar-track {
+    background: rgba(255, 215, 0, 0.2);
+}
+
+.category-bar::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 215, 0, 0.6);
+    border-radius: 4px;
+}
+
+.category-item {
+    padding: 8px 12px;
+    background-color: rgba(78, 141, 216, 0.7); /* Darker blue */
+    color: #FFD700; /* Gold text */
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    text-align: center;
+    white-space: nowrap;
+    transition: background-color 0.3s, transform 0.2s;
+}
+
+.category-item:hover {
+    background-color: rgba(255, 215, 0, 0.6); /* Brighter gold */
+    transform: scale(1.1);
+}
+
+.category-item.active {
+    background-color: #FFD700; /* Gold background for active category */
+    color: #222; /* Darker text for contrast */
+    font-weight: bold;
+}

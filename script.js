@@ -7,6 +7,7 @@ let isStaticPlaying = false; // Flag to track if static is playing
 let playerReady = false; // Flag to track if player is ready
 let volumeOverlayTimer; // Timer for hiding volume overlay
 let videoInfoOverlayTimer; // Timer for hiding video info overlay
+let tvGuidePanelVisible = false; // Declare tvGuidePanelVisible
 
 // Auto-Scroll Variables
 let autoScrollInterval;
@@ -15,10 +16,43 @@ const scrollPauseDuration = 5000; // 5 seconds pause after a full page scroll
 const scrollStep = 1; // Pixels to scroll each step
 const scrollDelay = 50; // Delay in ms between scroll steps
 
+const popularCategories = ["Gaming", "Music", "News", "Sports", "Bitcoin"];
+
 // Time Bar Variables
 let timeUpdateInterval;
 
-// Load the YouTube IFrame API
+// Variables to track touch start and end positions
+let touchStartY = 0;
+let touchEndY = 0;
+
+// Cached DOM Elements
+const volumeOverlay = document.querySelector('.volume-overlay');
+const volumeBars = document.querySelectorAll('.volume-bar');
+const volumeDisplay = document.querySelector('.volume-display');
+const staticOverlay = document.querySelector('.static-overlay');
+const videoInfoOverlay = document.querySelector('.video-info-overlay');
+const channelNumberOverlay = document.getElementById('channel-number-overlay');
+const errorOverlay = document.querySelector('.error-overlay');
+const loadingIndicator = document.getElementById('loading-indicator');
+const tvGuidePanel = document.querySelector('.tv-guide-panel');
+const channelList = document.querySelector('.channel-list');
+const categoryBar = document.querySelector('.category-bar');
+const timeBar = document.querySelector('.time-bar');
+let currentTimeElement = document.querySelector('.current-time'); // Changed to let
+
+// Audio Elements
+const staticSound = document.getElementById('static-sound');
+const buttonSound = document.getElementById('button-sound');
+
+// YouTube IFrame API Loader
+function loadYouTubeIFrameAPI() {
+    const tag = document.createElement('script');
+    tag.src = "https://www.youtube.com/iframe_api";
+    const firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+}
+
+// Initialize YouTube Player
 function onYouTubeIframeAPIReady() {
     player = new YT.Player('youtube-player', {
         height: '100%',
@@ -62,110 +96,93 @@ function onPlayerReady(event) {
 // Event: YouTube Player Error
 function onPlayerError(event) {
     console.error('YouTube Player Error:', event.data);
-    alert('An error occurred with the YouTube Player. Check console for details.');
+    showError('An error occurred with the YouTube Player. Please try again later.');
 }
 
-// Function: Load Live Videos from YouTube Data API
-async function loadLiveVideos(query = '') {
+// Helper Function: Check if a String is English
+const isEnglish = (text) => {
+    // Basic heuristic: Check if the text has mostly ASCII characters
+    const asciiChars = text.replace(/[^\x00-\x7F]/g, ''); // Remove non-ASCII characters
+    const asciiRatio = asciiChars.length / text.length;
+
+    // Consider the text English if more than 70% of its characters are ASCII
+    return asciiRatio > 0.7;
+};
+
+// Load Live Videos
+const loadLiveVideos = async (query = '') => {
     try {
-        showLoadingIndicator();
-        const apiKey = 'AIzaSyCc2W3HqRcnabPmu31CZPiHMYSxNRZedUI'; // Replace with your actual API key
-        const maxResultsPerCall = 50;
-        const desiredTotal = 250;
-        let fetchedTotal = 0;
-        let nextPageToken = '';
+        showLoadingIndicator(); // Show loading animation
+        const apiKey = 'AIzaSyDwaRzqtYemR2HpJGYX50suDM30wL1RPaU'; // Replace with your secure method of handling API keys
+        const maxResults = 50;
         const uniqueChannels = new Set();
-        const maxApiCalls = 10; // To prevent exceeding quota
-        let apiCalls = 0;
+        let apiUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&eventType=live&type=video&regionCode=US&maxResults=${maxResults}&relevanceLanguage=en&key=${apiKey}`;
 
-        while (fetchedTotal < desiredTotal && apiCalls < maxApiCalls) {
-            let apiUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&eventType=live&type=video&regionCode=US&maxResults=${maxResultsPerCall}&relevanceLanguage=en&key=${apiKey}`;
-            if (query) {
-                apiUrl += `&q=${encodeURIComponent(query)}`;
-            }
-            if (nextPageToken) {
-                apiUrl += `&pageToken=${nextPageToken}`;
-            }
-
-            const response = await fetch(apiUrl);
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-            const data = await response.json();
-
-            // Process each video item
-            for (const item of data.items) {
-                const videoId = item.id.videoId;
-                const channelName = item.snippet.channelTitle;
-                const videoTitle = item.snippet.title;
-
-                // Check for unique channel
-                if (!uniqueChannels.has(channelName)) {
-                    liveVideos.push({
-                        videoId: videoId,
-                        channel: channelName,
-                        title: videoTitle
-                    });
-                    uniqueChannels.add(channelName);
-                    fetchedTotal++;
-
-                    if (fetchedTotal >= desiredTotal) {
-                        break;
-                    }
-                }
-            }
-
-            console.log(`Fetched ${fetchedTotal} unique live videos so far.`);
-
-            // Prepare for next iteration
-            nextPageToken = data.nextPageToken;
-            if (!nextPageToken) {
-                console.log('No more pages available from YouTube API.');
-                break;
-            }
-
-            apiCalls++;
+        // Add query term if provided
+        if (query) {
+            apiUrl += `&q=${encodeURIComponent(query)}`;
         }
 
-        console.log(`Total unique live videos fetched: ${liveVideos.length}`);
+        // Fetch data from the API
+        const response = await fetch(apiUrl);
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(`YouTube API Error: ${error.error.message}`);
+        }
+        const data = await response.json();
 
-        if (liveVideos.length > 0 && playerReady) {
+        // Parse the results
+        liveVideos = []; // Clear current video list
+        for (const item of data.items) {
+            const { videoId } = item.id;
+            const { channelTitle: channelName, title: videoTitle } = item.snippet;
+
+            // Add only unique channels
+            if (!uniqueChannels.has(channelName)) {
+                liveVideos.push({
+                    videoId,
+                    channel: channelName,
+                    title: videoTitle,
+                });
+                uniqueChannels.add(channelName);
+            }
+        }
+
+        // Handle no results
+        if (liveVideos.length === 0) {
+            showError('No live videos found for this query.');
+        } else {
+            console.log(`Fetched ${liveVideos.length} live videos.`);
+            populateChannelList(liveVideos); // Update the channel list
+            // Automatically select and play the first video
             changeChannel(0);
-            populateTVGuidePanel(); // Populate TV guide after loading videos
-            initializeTimeBar(); // Initialize Time Bar after loadirrng channels
-        } else if (liveVideos.length === 0) {
-            alert('No live videos found.');
         }
     } catch (error) {
-        console.error('Failed to fetch live videos:', error);
-        alert('Failed to fetch live videos. Check console for details.');
+        console.error('Error fetching live videos:', error);
+        showError('Failed to fetch live videos. Please try again later.');
     } finally {
-        hideLoadingIndicator();
+        hideLoadingIndicator(); // Hide loading animation
     }
-}
+};
 
-// Function: Change Channel by Index
-function changeChannel(index) {
+// Change Channel by Index
+const changeChannel = (index) => {
     if (liveVideos.length === 0) {
         console.warn('No live videos available to change channel.');
         return;
     }
     currentChannelIndex = (index + liveVideos.length) % liveVideos.length;
-    const videoId = liveVideos[currentChannelIndex].videoId;
-    const channelName = liveVideos[currentChannelIndex].channel;
-    const videoTitle = liveVideos[currentChannelIndex].title;
+    const { videoId, channel, title } = liveVideos[currentChannelIndex];
     console.log(`Changing to video ID: ${videoId}`);
 
-    // Display Static Overlay
+    // Display Static Overlay and Play Static Sound
     showStaticOverlay();
-
-    // Play Static Sound
     playStaticSound();
 
     // Display Video Info Overlay
-    showVideoInfoOverlay(channelName, videoTitle);
+    showVideoInfoOverlay(channel, title);
 
-    // Update TV Guide Panel Selectionss
+    // Update TV Guide Panel Selection
     updateTVGuideSelection();
 
     // Show Channel Number Overlay
@@ -182,14 +199,13 @@ function changeChannel(index) {
         // Stop Static Sound
         stopStaticSound();
     }, 500);
-}
+};
 
-// Function: Increase Volume by 5%
-function volumeUp() {
+// Volume Control Functions
+const volumeUp = () => {
     if (player && typeof player.setVolume === 'function') {
         if (currentVolume < 100) {
-            currentVolume += 5;
-            if (currentVolume > 100) currentVolume = 100;
+            currentVolume = Math.min(currentVolume + 1, 100); // Increment by 1%
             player.setVolume(currentVolume);
             updateVolumeOverlay();
             localStorage.setItem('volumeLevel', currentVolume);
@@ -200,14 +216,12 @@ function volumeUp() {
     } else {
         console.error('YouTube Player not ready.');
     }
-}
+};
 
-// Function: Decrease Volume by 5%1
-function volumeDown() {
+const volumeDown = () => {
     if (player && typeof player.setVolume === 'function') {
         if (currentVolume > 0) {
-            currentVolume -= 5;
-            if (currentVolume < 0) currentVolume = 0;
+            currentVolume = Math.max(currentVolume - 1, 0); // Decrement by 1%
             player.setVolume(currentVolume);
             updateVolumeOverlay();
             localStorage.setItem('volumeLevel', currentVolume);
@@ -218,12 +232,10 @@ function volumeDown() {
     } else {
         console.error('YouTube Player not ready.');
     }
-}
+};
 
-// Function: Update Volume Overlay UI
-function updateVolumeOverlay() {
-    const volumeBars = document.querySelectorAll('.volume-bar');
-    const volumeDisplay = document.querySelector('.volume-display');
+// Update Volume Overlay UI
+const updateVolumeOverlay = () => {
     const volumeLevel = Math.round(currentVolume / 5); // Convert to 0-20 scale
 
     volumeBars.forEach((bar, index) => {
@@ -238,25 +250,26 @@ function updateVolumeOverlay() {
     if (volumeDisplay) {
         volumeDisplay.textContent = `${currentVolume}%`;
     }
-}
+};
 
-// Function: Show Volume Overlay and Reset Timer
-function showVolumeOverlay() {
-    const volumeOverlay = document.querySelector('.volume-overlay');
-    volumeOverlay.classList.add('visible');
+// Show Volume Overlay and Reset Timer
+const showVolumeOverlay = () => {
+    if (volumeOverlay) {
+        volumeOverlay.classList.add('visible');
+        // Reset the timer every time the overlay is shown
+        resetVolumeOverlayTimer();
+    }
+};
 
-    // Reset the timer every time the overlay is shown
-    resetVolumeOverlayTimer();
-}
+// Hide Volume Overlay
+const hideVolumeOverlay = () => {
+    if (volumeOverlay) {
+        volumeOverlay.classList.remove('visible');
+    }
+};
 
-// Function: Hide Volume Overlay
-function hideVolumeOverlay() {
-    const volumeOverlay = document.querySelector('.volume-overlay');
-    volumeOverlay.classList.remove('visible');
-}
-
-// Function: Reset Volume Overlay Timer
-function resetVolumeOverlayTimer() {
+// Reset Volume Overlay Timer
+const resetVolumeOverlayTimer = () => {
     // Clear existing timer if any
     if (volumeOverlayTimer) {
         clearTimeout(volumeOverlayTimer);
@@ -266,25 +279,26 @@ function resetVolumeOverlayTimer() {
     volumeOverlayTimer = setTimeout(() => {
         hideVolumeOverlay();
     }, 2000); // 2000 milliseconds = 2 seconds
-}
+};
 
-// Function: Show Static Overlay
-function showStaticOverlay() {
-    const staticOverlay = document.querySelector('.static-overlay');
-    staticOverlay.style.display = 'block';
-    console.log('Static overlay shown.');
-}
+// Show Static Overlay
+const showStaticOverlay = () => {
+    if (staticOverlay) {
+        staticOverlay.style.display = 'block';
+        console.log('Static overlay shown.');
+    }
+};
 
-// Function: Hide Static Overlay
-function hideStaticOverlay() {
-    const staticOverlay = document.querySelector('.static-overlay');
-    staticOverlay.style.display = 'none';
-    console.log('Static overlay hidden.');
-}
+// Hide Static Overlay
+const hideStaticOverlay = () => {
+    if (staticOverlay) {
+        staticOverlay.style.display = 'none';
+        console.log('Static overlay hidden.');
+    }
+};
 
-// Function: Play Static Sound
-function playStaticSound() {
-    const staticSound = document.getElementById('static-sound');
+// Play Static Sound
+const playStaticSound = () => {
     if (staticSound) {
         staticSound.currentTime = 0; // Reset to start
         staticSound.play().catch(error => {
@@ -293,46 +307,47 @@ function playStaticSound() {
         isStaticPlaying = true;
         console.log('Static sound playing.');
     }
-}
+};
 
-// Function: Stop Static Sound
-function stopStaticSound() {
-    const staticSound = document.getElementById('static-sound');
+// Stop Static Sound
+const stopStaticSound = () => {
     if (staticSound && isStaticPlaying) {
         staticSound.pause();
         staticSound.currentTime = 0; // Reset to start for next play
         isStaticPlaying = false;
         console.log('Static sound stopped.');
     }
-}
+};
 
-// Function: Show Video Info Overlay and Hide After Delay
-function showVideoInfoOverlay(channelName, videoTitle) {
-    const videoInfoOverlay = document.querySelector('.video-info-overlay');
-    const channelNameElem = videoInfoOverlay.querySelector('.channel-name');
-    const videoTitleElem = videoInfoOverlay.querySelector('.video-title');
+// Show Video Info Overlay and Hide After Delay
+const showVideoInfoOverlay = (channelName, videoTitle) => {
+    if (videoInfoOverlay) {
+        const channelNameElem = videoInfoOverlay.querySelector('.channel-name');
+        const videoTitleElem = videoInfoOverlay.querySelector('.video-title');
 
-    // Update the text content
-    channelNameElem.textContent = channelName;
-    videoTitleElem.textContent = videoTitle;
+        // Update the text content
+        if (channelNameElem) channelNameElem.textContent = channelName;
+        if (videoTitleElem) videoTitleElem.textContent = videoTitle;
 
-    // Make the overlay visible
-    videoInfoOverlay.classList.add('visible');
-    console.log('Video info overlay shown.');
+        // Make the overlay visible
+        videoInfoOverlay.classList.add('visible');
+        console.log('Video info overlay shown.');
 
-    // Reset the hide timer
-    resetVideoInfoOverlayTimer();
-}
+        // Reset the hide timer
+        resetVideoInfoOverlayTimer();
+    }
+};
 
-// Function: Hide Video Info Overlay
-function hideVideoInfoOverlay() {
-    const videoInfoOverlay = document.querySelector('.video-info-overlay');
-    videoInfoOverlay.classList.remove('visible');
-    console.log('Video info overlay hidden.');
-}
+// Hide Video Info Overlay
+const hideVideoInfoOverlay = () => {
+    if (videoInfoOverlay) {
+        videoInfoOverlay.classList.remove('visible');
+        console.log('Video info overlay hidden.');
+    }
+};
 
-// Function: Reset Video Info Overlay Timer
-function resetVideoInfoOverlayTimer() {
+// Reset Video Info Overlay Timer
+const resetVideoInfoOverlayTimer = () => {
     // Clear existing timer if any
     if (videoInfoOverlayTimer) {
         clearTimeout(videoInfoOverlayTimer);
@@ -342,173 +357,156 @@ function resetVideoInfoOverlayTimer() {
     videoInfoOverlayTimer = setTimeout(() => {
         hideVideoInfoOverlay();
     }, 7000); // 7000 milliseconds = 7 seconds
-}
+};
 
-// Function: Populate TV Guide Panel with Channel Listings
-function populateTVGuidePanel() {
-    const channelList = document.querySelector('.channel-list');
-    channelList.innerHTML = ''; // Clear existing entries
+// Populate TV Guide Panel with Channel Listings
+const populateTVGuidePanel = () => {
+    if (channelList) {
+        channelList.innerHTML = ''; // Clear existing entries
 
-    liveVideos.forEach((video, index) => {
-        const channelEntry = document.createElement('div');
-        channelEntry.classList.add('channel-entry');
-        channelEntry.setAttribute('data-channel-index', index);
-        channelEntry.setAttribute('tabindex', '0'); // Make focusable
-
-        // Container for Channel Number and Name
-        const channelInfo = document.createElement('div');
-        channelInfo.classList.add('channel-info');
-
-        // Channel Number
-        const channelNumber = document.createElement('span');
-        channelNumber.classList.add('channel-number');
-        channelNumber.textContent = index + 1; // Starting from 1
-
-        // Channel Name
-        const channelName = document.createElement('span');
-        channelName.classList.add('channel-name-list');
-        channelName.textContent = video.channel;
-
-        // Append channel number and name to channelInfo
-        channelInfo.appendChild(channelNumber);
-        channelInfo.appendChild(channelName);
-
-        // Video Title Box
-        const videoTitleBox = document.createElement('div');
-        videoTitleBox.classList.add('video-title-box');
-
-        const currentProgram = document.createElement('span');
-        currentProgram.classList.add('current-program');
-        currentProgram.textContent = video.title;
-
-        videoTitleBox.appendChild(currentProgram);
-
-        // Append channelInfo and videoTitleBox to channelEntry
-        channelEntry.appendChild(channelInfo);
-        channelEntry.appendChild(videoTitleBox);
-
-        // Add click event to select channel
-        channelEntry.addEventListener('click', () => {
-            changeChannel(index);
+        liveVideos.forEach((video, index) => {
+            const channelEntry = createChannelEntry(video, index);
+            channelList.appendChild(channelEntry);
         });
 
-        // Add keypress event for accessibility (Enter and Space keys)
-        channelEntry.addEventListener('keypress', (event) => {
-            if (event.key === 'Enter' || event.key === ' ') {
-                changeChannel(index);
+        // Show TV Guide Panel (if not already visible)
+        showTVGuidePanel();
+        console.log('TV Guide Panel populated.');
+    }
+};
+
+// Create a Channel Entry Element
+const createChannelEntry = (video, index) => {
+    const channelEntry = document.createElement('div');
+    channelEntry.classList.add('channel-entry');
+    channelEntry.setAttribute('data-channel-index', index);
+    channelEntry.setAttribute('tabindex', '0'); // Make focusable
+
+    // Add video details
+    channelEntry.innerHTML = `
+        <div class="channel-info">
+            <span class="channel-number">${index + 1}</span>
+            <span class="channel-name-list">${video.channel}</span>
+        </div>
+        <div class="video-title-box">
+            <span class="current-program">${video.title}</span>
+        </div>
+    `;
+
+    // Add click event to select channel
+    channelEntry.addEventListener('click', () => {
+        changeChannel(index);
+    });
+
+    // Add keypress event for accessibility (Enter and Space keys)
+    channelEntry.addEventListener('keypress', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+            changeChannel(index);
+        }
+    });
+
+    return channelEntry;
+};
+
+// Update TV Guide Panel Selection
+const updateTVGuideSelection = () => {
+    if (channelList) {
+        const channelEntries = channelList.querySelectorAll('.channel-entry');
+        channelEntries.forEach((entry, index) => {
+            if (index === currentChannelIndex) {
+                entry.classList.add('active');
+            } else {
+                entry.classList.remove('active');
             }
         });
+        console.log('TV Guide Panel selection updated.');
+    }
+};
 
-        // Highlight the currently playing channel
-        if (index === currentChannelIndex) {
-            channelEntry.classList.add('active');
+// Show TV Guide Panel and Start Auto-Scroll
+const showTVGuidePanel = () => {
+    if (tvGuidePanel) {
+        tvGuidePanel.classList.add('visible');
+        tvGuidePanelVisible = true;
+        console.log('TV Guide Panel shown.');
+
+        // Show Time Bar
+        if (timeBar) {
+            timeBar.classList.remove('hidden');
         }
 
-        // Append channel entry to channel list
-        channelList.appendChild(channelEntry);
-    });
-
-    // Show TV Guide Panel (if not already visible)
-    showTVGuidePanel();
-    console.log('TV Guide Panel populated.');
-}
-
-// Function: Update TV Guide Panel Selection
-function updateTVGuideSelection() {
-    const channelEntries = document.querySelectorAll('.channel-entry');
-    channelEntries.forEach((entry, index) => {
-        if (index === currentChannelIndex) {
-            entry.classList.add('active');
-        } else {
-            entry.classList.remove('active');
+        // Start auto-scroll if not already started
+        if (!autoScrollInterval) {
+            startAutoScroll();
         }
-    });
-    console.log('TV Guide Panel selection updated.');
-}
-
-// Function: Show TV Guide Panel and Start Auto-Scroll
-function showTVGuidePanel() {
-    const tvGuidePanel = document.querySelector('.tv-guide-panel');
-    tvGuidePanel.classList.add('visible');
-    tvGuidePanelVisible = true;
-    console.log('TV Guide Panel shown.');
-     startAutoScroll();
-    // Show Time Bar
-    const timeBar = tvGuidePanel.querySelector('.time-bar');
-    if (timeBar) {
-        timeBar.classList.remove('hidden');
     }
+};
 
-    // Start auto-scroll
-    
-}
+// Hide TV Guide Panel and Stop Auto-Scroll
+const hideTVGuidePanel = () => {
+    if (tvGuidePanel) {
+        tvGuidePanel.classList.remove('visible');
+        tvGuidePanelVisible = false;
+        console.log('TV Guide Panel hidden.');
 
-// Function: Hide TV Guide Panel and Stop Auto-Scroll
-function hideTVGuidePanel() {
-    const tvGuidePanel = document.querySelector('.tv-guide-panel');
-    tvGuidePanel.classList.remove('visible');
-    tvGuidePanelVisible = false;
-    console.log('TV Guide Panel hidden.');
+        // Hide Time Bar
+        if (timeBar) {
+            timeBar.classList.add('hidden');
+        }
 
-    // Hide Time Bar
-    const timeBar = tvGuidePanel.querySelector('.time-bar');
-    if (timeBar) {
-        timeBar.classList.add('hidden');
+        // Stop auto-scroll
+        stopAutoScroll();
     }
+};
 
-    // Stop auto-scroll
-    stopAutoScroll();
-}
+// Show Loading Indicator
+const showLoadingIndicator = () => {
+    if (loadingIndicator) {
+        loadingIndicator.classList.add('visible');
+        console.log('Loading indicator shown.');
+    }
+};
 
-// Function: Show Loading Indicator
-function showLoadingIndicator() {
-    const loadingIndicator = document.getElementById('loading-indicator');
-    loadingIndicator.classList.add('visible');
-    console.log('Loading indicator shown.');
-}
+// Hide Loading Indicator
+const hideLoadingIndicator = () => {
+    if (loadingIndicator) {
+        loadingIndicator.classList.remove('visible');
+        console.log('Loading indicator hidden.');
+    }
+};
 
-// Function: Hide Loading Indicator
-function hideLoadingIndicator() {
-    const loadingIndicator = document.getElementById('loading-indicator');
-    loadingIndicator.classList.remove('visible');
-    console.log('Loading indicator hidden.');
-}
-
-// Function: Show Channel Number Overlay
-function showChannelNumberOverlay(channelNumber) {
-    const overlay = document.getElementById('channel-number-overlay');
-
-    if (overlay) {
+// Show Channel Number Overlay
+const showChannelNumberOverlay = (channelNumber) => {
+    if (channelNumberOverlay) {
         // Set the channel number text
-        overlay.textContent = `${channelNumber}`;
+        channelNumberOverlay.textContent = `${channelNumber}`;
 
         // Make the overlay visible
-        overlay.classList.add('visible');
+        channelNumberOverlay.classList.add('visible');
         console.log(`Channel number overlay shown: Channel ${channelNumber}`);
 
         // Hide the overlay after 7 seconds
         setTimeout(() => {
-            overlay.classList.remove('visible');
+            channelNumberOverlay.classList.remove('visible');
             console.log('Channel number overlay hidden.');
         }, 7000); // 7000 milliseconds = 7 seconds
     } else {
         console.error('Channel Number Overlay element not found.');
     }
-}
+};
 
-// Function: Play Button Sound
-function playButtonSound() {
-    const buttonSound = document.getElementById('button-sound');
+// Play Button Sound
+const playButtonSound = () => {
     if (buttonSound) {
         buttonSound.currentTime = 0;
         buttonSound.play().catch(error => {
             console.error('Error playing button sound:', error);
         });
     }
-}
+};
 
-// Function: Drag-and-Drop Functionality
-function makeElementDraggable(draggableElement, handleElement) {
+// Drag-and-Drop Functionality
+const makeElementDraggable = (draggableElement, handleElement) => {
     let isDragging = false;
     let startX, startY;
     let initialX, initialY;
@@ -591,7 +589,7 @@ function makeElementDraggable(draggableElement, handleElement) {
         draggableElement.style.position = 'fixed';
     }
 
-    function dragEnd(e) {
+    function dragEnd() {
         if (!isDragging) return;
         isDragging = false;
         console.log('Drag ended.');
@@ -604,34 +602,41 @@ function makeElementDraggable(draggableElement, handleElement) {
         const currentTop = draggableElement.style.top;
         localStorage.setItem('remotePosition', JSON.stringify({ left: currentLeft, top: currentTop }));
     }
-}
+};
 
-// Function: Toggle Retro Mode (Apply/Remove Retro Filter)
-function toggleRetroMode() {
+// Toggle Retro Mode (Apply/Remove Retro Filter)
+const toggleRetroMode = () => {
     const youtubePlayer = document.getElementById('youtube-player');
-    youtubePlayer.classList.toggle('retro-filter');
-    console.log('Retro Mode toggled.');
-    playButtonSound(); // Play sound effect
-}
+    if (youtubePlayer) {
+        youtubePlayer.classList.toggle('retro-filter');
+        console.log('Retro Mode toggled.');
+        playButtonSound(); // Play sound effect
+    } else {
+        console.error('YouTube Player element not found.');
+    }
+};
 
-// Function: Toggle Remote Control Visibility
-function toggleRemote() {
+// Toggle Remote Control Visibility
+const toggleRemote = () => {
     const remote = document.querySelector('.remote');
     const toggleButton = document.getElementById('toggle-remote');
-    remote.classList.toggle('hidden');
-    if (remote.classList.contains('hidden')) {
-        toggleButton.textContent = 'Show Remote';
-        console.log('Remote controls hidden.');
+    if (remote && toggleButton) {
+        remote.classList.toggle('hidden');
+        if (remote.classList.contains('hidden')) {
+            toggleButton.textContent = 'Show Remote';
+            console.log('Remote controls hidden.');
+        } else {
+            toggleButton.textContent = 'Hide Remote';
+            console.log('Remote controls shown.');
+            playButtonSound(); // Play sound effect
+        }
     } else {
-        toggleButton.textContent = 'Hide Remote';
-        console.log('Remote controls shown.');
-        playButtonSound(); // Play sound effect
+        console.error('Remote or Toggle Remote button not found.');
     }
-}
+};
 
-// Function: Start Auto-Scroll
-function startAutoScroll() {
-    const channelList = document.querySelector('.channel-list');
+// Start Auto-Scroll
+const startAutoScroll = () => {
     if (!channelList) return;
 
     autoScrollInterval = setInterval(() => {
@@ -657,10 +662,10 @@ function startAutoScroll() {
     }, scrollDelay);
 
     console.log('Auto-scroll started.');
-}
+};
 
-// Function: Pause Auto-Scroll
-function pauseAutoScroll() {
+// Pause Auto-Scroll
+const pauseAutoScroll = () => {
     autoScrollPaused = true;
     console.log('Auto-scroll paused.');
 
@@ -668,18 +673,18 @@ function pauseAutoScroll() {
         autoScrollPaused = false;
         console.log('Auto-scroll resumed.');
     }, scrollPauseDuration);
-}
+};
 
-// Function: Stop Auto-Scroll
-function stopAutoScroll() {
+// Stop Auto-Scroll
+const stopAutoScroll = () => {
     clearInterval(autoScrollInterval);
+    autoScrollInterval = null;
     autoScrollPaused = false;
     console.log('Auto-scroll stopped.');
-}
+};
 
-// Function: Setup Auto-Scroll Pause on User Interaction
-function setupAutoScrollPauseOnInteraction() {
-    const channelList = document.querySelector('.channel-list');
+// Setup Auto-Scroll Pause on User Interaction
+const setupAutoScrollPauseOnInteraction = () => {
     if (!channelList) return;
 
     // Pause auto-scroll on mouse enter and touch start
@@ -697,44 +702,41 @@ function setupAutoScrollPauseOnInteraction() {
             autoScrollPaused = false;
         }, scrollPauseDuration);
     });
-}
+};
 
 // Initialize Auto-Scroll System
-document.addEventListener('DOMContentLoaded', () => {
+const initializeAutoScroll = () => {
     setupAutoScrollPauseOnInteraction();
     startAutoScroll();
-});
+};
 
-// Function: Initialize Time Bar
-function initializeTimeBar() {
-    const timeBar = document.querySelector('.time-bar');
+// Initialize Time Bar
+const initializeTimeBar = () => {
     if (!timeBar) {
         console.error('Time Bar element not found.');
         return;
     }
 
     // Create a separate element for current time display if it doesn't exist
-    let currentTimeElement = document.querySelector('.current-time');
     if (!currentTimeElement) {
-        currentTimeElement = document.createElement('div');
+        currentTimeElement = document.createElement('div'); // Reassign using let
         currentTimeElement.classList.add('current-time');
         currentTimeElement.setAttribute('aria-label', 'Current Time');
         timeBar.appendChild(currentTimeElement);
     }
 
     // Generate initial time blocks and update current time
-    generateTimeBlocks(currentTimeElement);
+    generateTimeBlocks();
 
     // Update time blocks every second to keep them current
     timeUpdateInterval = setInterval(() => {
-        generateTimeBlocks(currentTimeElement);
+        generateTimeBlocks();
     }, 1000); // 1000 ms = 1 second
-}
+};
 
-// Function: Generate Time Blocks and Update Current Time
-function generateTimeBlocks(currentTimeElement) {
-    const timeBar = document.querySelector('.time-bar');
-    if (!timeBar) return;
+// Generate Time Blocks and Update Current Time
+const generateTimeBlocks = () => {
+    if (!timeBar || !currentTimeElement) return;
 
     const currentTime = new Date();
     const currentHours = currentTime.getHours();
@@ -750,10 +752,6 @@ function generateTimeBlocks(currentTimeElement) {
 
     // Update the current time element
     currentTimeElement.textContent = timeString;
-
-    // Optional: Style the current time element (You can adjust via CSS)
-    // Ensure styles are handled via CSS to prevent layout shifts
-    // Remove any inline styles added previously
 
     // Remove existing upcoming time blocks
     const existingTimeBlocks = timeBar.querySelectorAll('.time-block.upcoming');
@@ -789,52 +787,158 @@ function generateTimeBlocks(currentTimeElement) {
         timeBlock.classList.add('time-block', 'upcoming');
         timeBlock.textContent = timeBlockString;
 
-        // Optional: Style the upcoming time blocks
-        // Ensure styles are handled via CSS to maintain static positioning
-
         timeBar.appendChild(timeBlock);
     }
-}
+};
 
-// Function: Show Loading Indicator
-function showLoadingIndicator() {
-    const loadingIndicator = document.getElementById('loading-indicator');
-    loadingIndicator.classList.add('visible');
-    console.log('Loading indicator shown.');
-}
+// Show Custom Error Overlay
+const showError = (message) => {
+    if (errorOverlay) {
+        errorOverlay.textContent = message;
+        errorOverlay.classList.add('visible');
+        setTimeout(() => {
+            errorOverlay.classList.remove('visible');
+        }, 5000); // Hide after 5 seconds
+    } else {
+        console.error('Error Overlay element not found.');
+    }
+};
 
-// Function: Hide Loading Indicator
-function hideLoadingIndicator() {
-    const loadingIndicator = document.getElementById('loading-indicator');
-    loadingIndicator.classList.remove('visible');
-    console.log('Loading indicator hidden.');
-}
+// Populate Category Bar
+const populateCategoryBar = () => {
+    if (categoryBar) {
+        categoryBar.innerHTML = ''; // Clear existing categories
 
-// Keyboard Controls for Volume (Enhancement: Add Visual Feedback)
-document.addEventListener('keydown', (event) => {
+        // Add an "All" or "Default" category for top live videos
+        const defaultCategoryItem = createCategoryItem('All', '');
+        categoryBar.appendChild(defaultCategoryItem);
+
+        // Populate other categories
+        popularCategories.forEach((category) => {
+            const categoryItem = createCategoryItem(category, category);
+            categoryBar.appendChild(categoryItem);
+        });
+    }
+};
+
+// Create a Category Item Element
+const createCategoryItem = (name, category) => {
+    const categoryItem = document.createElement('div');
+    categoryItem.classList.add('category-item');
+    categoryItem.textContent = name;
+    categoryItem.setAttribute('data-category', category);
+
+    // Add click event to filter channels by category
+    categoryItem.addEventListener('click', async () => {
+        setActiveCategory(categoryItem); // Highlight the active category
+        await filterChannelsByCategory(category); // Perform the new query
+    });
+
+    return categoryItem;
+};
+
+// Filter Channels by Category
+const filterChannelsByCategory = async (category) => {
+    if (category) {
+        console.log(`Fetching videos for category: ${category}`);
+        await loadLiveVideos(category); // Perform a new query using the category as the search term
+    } else {
+        console.log("No category selected. Loading top live videos.");
+        await loadLiveVideos(); // Load default top live videos
+    }
+};
+
+// Set Active Category
+const setActiveCategory = (activeItem) => {
+    const categoryItems = categoryBar.querySelectorAll('.category-item');
+    categoryItems.forEach((item) => item.classList.remove('active')); // Remove active state
+    activeItem.classList.add('active'); // Add active state to the selected item
+};
+
+// Handle Touch Gestures for Channel Switching
+const handleTouchStart = (event) => {
+    // Get the Y-coordinate of the initial touch point
+    touchStartY = event.touches[0].clientY;
+};
+
+const handleTouchEnd = (event) => {
+    // Get the Y-coordinate of the final touch point
+    touchEndY = event.changedTouches[0].clientY;
+
+    // Calculate the swipe direction
+    handleSwipeGesture();
+};
+
+const handleSwipeGesture = () => {
+    const swipeThreshold = 50; // Minimum distance for a valid swipe
+
+    // Check if the swipe distance is enough
+    if (Math.abs(touchStartY - touchEndY) > swipeThreshold) {
+        if (touchStartY > touchEndY) {
+            // Swipe up detected
+            console.log('Swipe up detected: Next Channel');
+            changeChannel(currentChannelIndex + 1);
+        } else {
+            // Swipe down detected
+            console.log('Swipe down detected: Previous Channel');
+            changeChannel(currentChannelIndex - 1);
+        }
+    } else {
+        console.log('Swipe not long enough to be considered valid.');
+    }
+};
+
+// Keyboard Controls for Volume
+const handleKeyDown = (event) => {
     if (event.key === 'ArrowUp') {
         volumeUp();
     } else if (event.key === 'ArrowDown') {
         volumeDown();
     }
-});
+};
 
-// Initialize Draggable Remote Control and Event Listeners
-document.addEventListener('DOMContentLoaded', () => {
+// Initialize Draggable Remote Control
+const initializeDraggableRemote = () => {
+    const remote = document.getElementById('remote-control');
+    const dragHandle = document.getElementById('drag-handle');
+
+    if (remote && dragHandle) {
+        makeElementDraggable(remote, dragHandle);
+    } else {
+        console.error('Remote Control or Drag Handle not found in the DOM.');
+    }
+};
+
+// Event Listeners for Touch Gestures
+const initializeTouchGestures = () => {
+    document.addEventListener('touchstart', handleTouchStart, { passive: true });
+    document.addEventListener('touchend', handleTouchEnd, { passive: true });
+};
+
+// Event Listeners for Keyboard Controls
+const initializeKeyboardControls = () => {
+    document.addEventListener('keydown', handleKeyDown);
+};
+
+// Initialize the Application
+const initializeApp = () => {
     // Generate Volume Bars Dynamically
-    const volumeBarsContainer = document.querySelector('.volume-bars');
-    for (let i = 0; i < 20; i++) {
-        const bar = document.createElement('div');
-        bar.classList.add('volume-bar');
-        volumeBarsContainer.appendChild(bar);
+    if (volumeBars.length === 0 && volumeOverlay) {
+        const volumeBarsContainer = volumeOverlay.querySelector('.volume-bars');
+        if (volumeBarsContainer) {
+            for (let i = 0; i < 20; i++) {
+                const bar = document.createElement('div');
+                bar.classList.add('volume-bar');
+                volumeBarsContainer.appendChild(bar);
+            }
+        }
     }
 
     // Load volume from localStorage if available
     const savedVolume = localStorage.getItem('volumeLevel');
     if (savedVolume !== null) {
         currentVolume = parseInt(savedVolume, 10);
-        if (currentVolume < 0) currentVolume = 0;
-        if (currentVolume > 100) currentVolume = 100;
+        currentVolume = Math.min(Math.max(currentVolume, 0), 100); // Clamp between 0 and 100
         console.log(`Loaded saved volume: ${currentVolume}%`);
     }
     updateVolumeOverlay();
@@ -892,7 +996,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (guideButton) {
         guideButton.addEventListener('click', () => {
-            if (tvGuidePanelVisible) { 
+            if (tvGuidePanelVisible) {
                 hideTVGuidePanel();
             } else {
                 showTVGuidePanel();
@@ -912,18 +1016,42 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Initialize Draggable Remote Control
-    const remote = document.getElementById('remote-control');
-    const dragHandle = document.getElementById('drag-handle');
+    initializeDraggableRemote();
 
-    if (remote && dragHandle) {
-        makeElementDraggable(remote, dragHandle);
-    } else {
-        console.error('Remote Control or Drag Handle not found in the DOM.');
-    }
+    // Populate the category bar and load default videos
+    populateCategoryBar(); 
+    filterChannelsByCategory(''); // Load default top live videos
 
-    // Setup auto-scroll pause on user interaction
-    setupAutoScrollPauseOnInteraction();
+    // Initialize Auto-Scroll System
+    initializeAutoScroll();
 
     // Initialize Time Bar
     initializeTimeBar();
+
+    // Initialize Touch Gestures
+    initializeTouchGestures();
+
+    // Initialize Keyboard Controls
+    initializeKeyboardControls();
+};
+
+// Populate Channel List
+const populateChannelList = (videos) => {
+    if (channelList) {
+        channelList.innerHTML = ''; // Clear existing entries
+
+        videos.forEach((video, index) => {
+            const channelEntry = createChannelEntry(video, index);
+            channelList.appendChild(channelEntry);
+        });
+
+        // Update TV Guide Panel Selection
+        updateTVGuideSelection();
+    }
+};
+
+// Load YouTube IFrame API and Initialize App on DOM Content Loaded
+document.addEventListener('DOMContentLoaded', () => {
+    loadYouTubeIFrameAPI();
+    initializeApp();
 });

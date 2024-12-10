@@ -40,12 +40,8 @@
     <!-- Remote Control Overlay -->
     <div class="remote" id="remote-control" aria-label="Remote Control">
         <!-- Drag Handle -->
-        <div class="drag-handle" id="drag-handle" aria-label="Drag Handle">
-            &#x2630; <!-- Hamburger icon -->
-        </div>
-        <button class="remote-button" id="retro-mode" aria-label="Toggle Retro Mode">
-            Retro Mode
-        </button>
+    
+      
         <div class="volume-controls">
             <button class="remote-button-v" id="volume-down" aria-label="Volume Down">Volume<br> -</button>
             <button class="remote-button-v" id="volume-up" aria-label="Volume Up">Volume +</button>
@@ -53,9 +49,7 @@
         <button class="remote-button" id="next-channel" aria-label="Next Channel">
             &#x25B2; <!-- Up Arrow -->
         </button>
-        <button class="remote-button-guide" id="hide-guide2" aria-label="Toggle Guide">
-            GUIDE
-        </button>
+    
         <button class="remote-button" id="previous-channel" aria-label="Previous Channel">
             &#x25BC; <!-- Down Arrow -->
         </button>
@@ -63,11 +57,13 @@
 
     <!-- Toggle Remote Control Button -->
     <button class="toggle-remote" id="toggle-remote">Hide Remote</button>
-    <button style="margin-top:50px" class="toggle-remote" id="hide-guide">Guide</button>
+    <button class="remote-button-guide-top" id="hide-guide">Guide</button>
 
     <!-- TV Guide Panel -->
     <div class="tv-guide-panel" aria-label="TV Guide Channel Listings">
-        <!-- Time Bar -->
+        <div class="category-bar" aria-label="Popular Categories">
+            <!-- Categories will be dynamically populated -->
+        </div>
         <div class="time-bar" aria-label="Current Time and Upcoming Blocks">
             <!-- Time blocks will be populated here dynamically -->
         </div>
