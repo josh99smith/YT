@@ -1,11 +1,9 @@
 // Global Variables
 let player;
-let currentVolume = 50; // Initialize volume at 50%
 let liveVideos = [];
 let currentChannelIndex = 0;
 let isStaticPlaying = false; // Flag to track if static is playing
 let playerReady = false; // Flag to track if player is ready
-let volumeOverlayTimer; // Timer for hiding volume overlay
 let videoInfoOverlayTimer; // Timer for hiding video info overlay
 let tvGuidePanelVisible = false; // Declare tvGuidePanelVisible
 
@@ -26,9 +24,6 @@ let touchStartY = 0;
 let touchEndY = 0;
 
 // Cached DOM Elements
-const volumeOverlay = document.querySelector('.volume-overlay');
-const volumeBars = document.querySelectorAll('.volume-bar');
-const volumeDisplay = document.querySelector('.volume-display');
 const staticOverlay = document.querySelector('.static-overlay');
 const videoInfoOverlay = document.querySelector('.video-info-overlay');
 const channelNumberOverlay = document.getElementById('channel-number-overlay');
@@ -79,16 +74,13 @@ function onYouTubeIframeAPIReady() {
 function onPlayerReady(event) {
     playerReady = true;
     console.log('YouTube Player is ready.');
-    // Set initial volume
-    player.setVolume(currentVolume);
-    updateVolumeOverlay();
+    // Set initial volume (handled by system/browser volume)
+    player.setVolume(100); // Set to max to respect system volume
     // Load live videos after player is ready
     loadLiveVideos();
     // Unmute on user interaction
     document.body.addEventListener('click', () => {
         player.unMute();
-        player.setVolume(currentVolume);
-        updateVolumeOverlay();
         console.log('User interaction detected. Player unmuted.');
     }, { once: true });
 }
@@ -199,86 +191,6 @@ const changeChannel = (index) => {
         // Stop Static Sound
         stopStaticSound();
     }, 500);
-};
-
-// Volume Control Functions
-const volumeUp = () => {
-    if (player && typeof player.setVolume === 'function') {
-        if (currentVolume < 100) {
-            currentVolume = Math.min(currentVolume + 1, 100); // Increment by 1%
-            player.setVolume(currentVolume);
-            updateVolumeOverlay();
-            localStorage.setItem('volumeLevel', currentVolume);
-            console.log(`Volume increased to ${currentVolume}%`);
-            showVolumeOverlay(); // Show overlay when volume is adjusted
-            playButtonSound(); // Play sound effect
-        }
-    } else {
-        console.error('YouTube Player not ready.');
-    }
-};
-
-const volumeDown = () => {
-    if (player && typeof player.setVolume === 'function') {
-        if (currentVolume > 0) {
-            currentVolume = Math.max(currentVolume - 1, 0); // Decrement by 1%
-            player.setVolume(currentVolume);
-            updateVolumeOverlay();
-            localStorage.setItem('volumeLevel', currentVolume);
-            console.log(`Volume decreased to ${currentVolume}%`);
-            showVolumeOverlay(); // Show overlay when volume is adjusted
-            playButtonSound(); // Play sound effect
-        }
-    } else {
-        console.error('YouTube Player not ready.');
-    }
-};
-
-// Update Volume Overlay UI
-const updateVolumeOverlay = () => {
-    const volumeLevel = Math.round(currentVolume / 5); // Convert to 0-20 scale
-
-    volumeBars.forEach((bar, index) => {
-        if (index < volumeLevel) {
-            bar.classList.add('active');
-        } else {
-            bar.classList.remove('active');
-        }
-    });
-
-    // Update Volume Display
-    if (volumeDisplay) {
-        volumeDisplay.textContent = `${currentVolume}%`;
-    }
-};
-
-// Show Volume Overlay and Reset Timer
-const showVolumeOverlay = () => {
-    if (volumeOverlay) {
-        volumeOverlay.classList.add('visible');
-        // Reset the timer every time the overlay is shown
-        resetVolumeOverlayTimer();
-    }
-};
-
-// Hide Volume Overlay
-const hideVolumeOverlay = () => {
-    if (volumeOverlay) {
-        volumeOverlay.classList.remove('visible');
-    }
-};
-
-// Reset Volume Overlay Timer
-const resetVolumeOverlayTimer = () => {
-    // Clear existing timer if any
-    if (volumeOverlayTimer) {
-        clearTimeout(volumeOverlayTimer);
-    }
-
-    // Set a new timer to hide the overlay after 2 seconds
-    volumeOverlayTimer = setTimeout(() => {
-        hideVolumeOverlay();
-    }, 2000); // 2000 milliseconds = 2 seconds
 };
 
 // Show Static Overlay
@@ -888,14 +800,7 @@ const handleSwipeGesture = () => {
     }
 };
 
-// Keyboard Controls for Volume
-const handleKeyDown = (event) => {
-    if (event.key === 'ArrowUp') {
-        volumeUp();
-    } else if (event.key === 'ArrowDown') {
-        volumeDown();
-    }
-};
+// Keyboard Controls for Volume (Removed as per requirement)
 
 // Initialize Draggable Remote Control
 const initializeDraggableRemote = () => {
@@ -915,39 +820,14 @@ const initializeTouchGestures = () => {
     document.addEventListener('touchend', handleTouchEnd, { passive: true });
 };
 
-// Event Listeners for Keyboard Controls
-const initializeKeyboardControls = () => {
-    document.addEventListener('keydown', handleKeyDown);
-};
+// Event Listeners for Keyboard Controls (Removed as volume is not controlled)
 
 // Initialize the Application
 const initializeApp = () => {
-    // Generate Volume Bars Dynamically
-    if (volumeBars.length === 0 && volumeOverlay) {
-        const volumeBarsContainer = volumeOverlay.querySelector('.volume-bars');
-        if (volumeBarsContainer) {
-            for (let i = 0; i < 20; i++) {
-                const bar = document.createElement('div');
-                bar.classList.add('volume-bar');
-                volumeBarsContainer.appendChild(bar);
-            }
-        }
-    }
+    // Attach event listeners to remote buttons (excluding volume buttons)
 
-    // Load volume from localStorage if available
-    const savedVolume = localStorage.getItem('volumeLevel');
-    if (savedVolume !== null) {
-        currentVolume = parseInt(savedVolume, 10);
-        currentVolume = Math.min(Math.max(currentVolume, 0), 100); // Clamp between 0 and 100
-        console.log(`Loaded saved volume: ${currentVolume}%`);
-    }
-    updateVolumeOverlay();
-
-    // Attach event listeners to remote buttons
     const previousChannelBtn = document.getElementById('previous-channel');
     const nextChannelBtn = document.getElementById('next-channel');
-    const volumeUpBtn = document.getElementById('volume-up');
-    const volumeDownBtn = document.getElementById('volume-down');
     const retroModeBtn = document.getElementById('retro-mode');
     const toggleRemoteBtn = document.getElementById('toggle-remote');
     const guideButton = document.getElementById('hide-guide');
@@ -968,22 +848,6 @@ const initializeApp = () => {
         });
     } else {
         console.error('Next Channel button not found.');
-    }
-
-    if (volumeUpBtn) {
-        volumeUpBtn.addEventListener('click', () => {
-            volumeUp();
-        });
-    } else {
-        console.error('Volume Up button not found.');
-    }
-
-    if (volumeDownBtn) {
-        volumeDownBtn.addEventListener('click', () => {
-            volumeDown();
-        });
-    } else {
-        console.error('Volume Down button not found.');
     }
 
     if (retroModeBtn) {
@@ -1031,8 +895,7 @@ const initializeApp = () => {
     // Initialize Touch Gestures
     initializeTouchGestures();
 
-    // Initialize Keyboard Controls
-    initializeKeyboardControls();
+    // Keyboard Controls for Volume (Removed)
 };
 
 // Populate Channel List
