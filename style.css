@@ -491,6 +491,187 @@ body {
     visibility: visible;
 }
 
+/* Loading Indicator Styles */
+.loading-indicator {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 6;
+    display: none; /* Hidden by default */
+}
+
+.loading-indicator.visible {
+    display: block;
+}
+
+/* Spinner Styles */
+.spinner {
+    border: 8px solid rgba(255, 215, 0, 0.2);
+    border-top: 8px solid #FFD700;
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    animation: spin 1s linear infinite;
+}
+
+/* Spin Animation */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Time Bar Styles */
+.time-bar {
+    display: flex;
+    
+    
+    height:50px;
+    background-color: rgba(78, 141, 216, 0.9); /* Semi-transparent dark blue */
+    border-bottom: 3px solid #ffffff; /* Gold border */
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    color:white;
+    
+}
+
+
+.time-block {
+  padding-top:10px;
+    text-align: center;
+    color: #FFD700;
+    font-size: 18px;
+    border:2px solid white;
+   height: 100%;
+   width:33%;
+    
+    transition: background-color 0.3s, transform 0.2s;
+}
+
+.time-block.current {
+    border:2px solid white;
+    font-size: 18px;
+    font-weight: bold;
+    color:white;
+    width: 40%;
+    text-align: center;
+ 
+   
+}
+.current-time { font-weight: bold;
+    color:white;
+    font-size: 18px;
+    width: 25.5%;
+    text-align: center;
+    padding-top:10px;
+    border:2px solid white;
+    
+    }
+    
+
+.time-bar.hidden {
+    display: none;
+}
+
+/* Category Bar Styles */
+.category-bar {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    padding: 10px 20px;
+    background-color: rgba(19, 45, 76, 0.9); /* Semi-transparent dark blue */
+    border-bottom: 3px solid #ffffff; /* Gold border */
+    position: sticky;
+    top: 0;
+    z-index: 6;
+    gap: 10px;
+    overflow-x: auto; /* Enable horizontal scrolling for smaller screens */
+    scrollbar-width: thin; /* For Firefox */
+    scrollbar-color: #FFD700 #3c84e81f;
+}
+
+.category-bar::-webkit-scrollbar {
+    height: 8px;
+}
+
+.category-bar::-webkit-scrollbar-track {
+    background: rgba(255, 215, 0, 0.2);
+}
+
+.category-bar::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 215, 0, 0.6);
+    border-radius: 4px;
+}
+
+.category-item {
+    padding: 8px 12px;
+    background-color: rgba(78, 141, 216, 0.7); /* Darker blue */
+    color: #FFD700; /* Gold text */
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    text-align: center;
+    white-space: nowrap;
+    transition: background-color 0.3s, transform 0.2s;
+}
+
+.category-item:hover {
+    background-color: rgba(255, 215, 0, 0.6); /* Brighter gold */
+    transform: scale(1.1);
+}
+
+.category-item.active {
+    background-color: #FFD700; /* Gold background for active category */
+    color: #222; /* Darker text for contrast */
+    font-weight: bold;
+}
+
+/* Subscriber Overlay Styles */
+.subscriber-overlay {
+    position: fixed;
+    bottom: 10px;
+    left: 10px;
+    background-color: rgba(0, 0, 0, 0.6); /* Semi-transparent background */
+    color: #FFD700;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 14px;
+    z-index: 6;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.5s ease, visibility 0.5s ease;
+    font-family: 'DM Sans', sans-serif;
+}
+
+/* When Visible */
+.subscriber-overlay.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Upload Date Overlay Styles */
+.upload-date-overlay {
+    position: fixed;
+    right: 10px;
+    bottom: 10px;
+    background-color: rgba(0, 0, 0, 0.6); /* Semi-transparent background */
+    color: #FFD700;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 14px;
+    z-index: 6;
+  
+    transition: opacity 0.5s ease, visibility 0.5s ease;
+    font-family: 'DM Sans', sans-serif;
+}
+
+.upload-date-overlay.visible {
+    display: block;
+    opacity: 1;
+}
+
+
 /* Responsive Font Size */
 @media (max-width: 768px) {
     /* Adjust Channel Number Overlay */
@@ -591,18 +772,29 @@ body {
 
     .time-block {
         font-size: 12px;
+       
     }
 
     .time-block.current {
-        font-size: 15px;
+        font-size: 13px;
+       
     }
 
+    .current-time {
+        width:50%;
+        border-right: 2px solid white;
+    }
+    
     .time-block.upcoming {
         font-size: 12px;
+     
+      
     }
 
     .time-bar {
         font-size: 12px;
+        padding:0;
+        
     }
 
     #youtube-player {
@@ -613,176 +805,3 @@ body {
     }
 }
 
-/* Loading Indicator Styles */
-.loading-indicator {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 6;
-    display: none; /* Hidden by default */
-}
-
-.loading-indicator.visible {
-    display: block;
-}
-
-/* Spinner Styles */
-.spinner {
-    border: 8px solid rgba(255, 215, 0, 0.2);
-    border-top: 8px solid #FFD700;
-    border-radius: 50%;
-    width: 60px;
-    height: 60px;
-    animation: spin 1s linear infinite;
-}
-
-/* Spin Animation */
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-/* Time Bar Styles */
-.time-bar {
-    display: flex;
-    
-    
-    padding: 10px 10px;
-    background-color: rgba(78, 141, 216, 0.9); /* Semi-transparent dark blue */
-    border-bottom: 6px outset #ffffff; /* Gold border */
-    position: sticky;
-    top: 0;
-    z-index: 5;
-    color:white;
-}
-
-.time-block {
-  
-    text-align: center;
-    color: #FFD700;
-    font-size: 18px;
-    margin: 0 5px;
-   width:33%;
-    border-radius: 4px;
-    transition: background-color 0.3s, transform 0.2s;
-}
-
-.time-block.current {
-
-    font-size: 18px;
-    font-weight: bold;
-    color:white;
-    width: 20%;
-    text-align: center;
- 
-   
-}
-.current-time { font-weight: bold;
-    color:white;
-    font-size: 18px;
-    width: 20%;
-    text-align: center;
-    }
-    
-
-.time-bar.hidden {
-    display: none;
-}
-
-/* Category Bar Styles */
-.category-bar {
-    display: flex;
-    justify-content: flex-start;
-    align-items: center;
-    padding: 10px 20px;
-    background-color: rgba(19, 45, 76, 0.9); /* Semi-transparent dark blue */
-    border-bottom: 6px solid #ffffff; /* Gold border */
-    position: sticky;
-    top: 0;
-    z-index: 6;
-    gap: 10px;
-    overflow-x: auto; /* Enable horizontal scrolling for smaller screens */
-    scrollbar-width: thin; /* For Firefox */
-    scrollbar-color: #FFD700 #3c84e81f;
-}
-
-.category-bar::-webkit-scrollbar {
-    height: 8px;
-}
-
-.category-bar::-webkit-scrollbar-track {
-    background: rgba(255, 215, 0, 0.2);
-}
-
-.category-bar::-webkit-scrollbar-thumb {
-    background-color: rgba(255, 215, 0, 0.6);
-    border-radius: 4px;
-}
-
-.category-item {
-    padding: 8px 12px;
-    background-color: rgba(78, 141, 216, 0.7); /* Darker blue */
-    color: #FFD700; /* Gold text */
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-    text-align: center;
-    white-space: nowrap;
-    transition: background-color 0.3s, transform 0.2s;
-}
-
-.category-item:hover {
-    background-color: rgba(255, 215, 0, 0.6); /* Brighter gold */
-    transform: scale(1.1);
-}
-
-.category-item.active {
-    background-color: #FFD700; /* Gold background for active category */
-    color: #222; /* Darker text for contrast */
-    font-weight: bold;
-}
-
-/* Subscriber Overlay Styles */
-.subscriber-overlay {
-    position: fixed;
-    bottom: 10px;
-    left: 10px;
-    background-color: rgba(0, 0, 0, 0.6); /* Semi-transparent background */
-    color: #FFD700;
-    padding: 5px 10px;
-    border-radius: 5px;
-    font-size: 14px;
-    z-index: 6;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.5s ease, visibility 0.5s ease;
-    font-family: 'DM Sans', sans-serif;
-}
-
-/* When Visible */
-.subscriber-overlay.visible {
-    opacity: 1;
-    visibility: visible;
-}
-
-/* Upload Date Overlay Styles */
-.upload-date-overlay {
-    position: fixed;
-    right: 10px;
-    bottom: 10px;
-    background-color: rgba(0, 0, 0, 0.6); /* Semi-transparent background */
-    color: #FFD700;
-    padding: 5px 10px;
-    border-radius: 5px;
-    font-size: 14px;
-    z-index: 6;
-  
-    transition: opacity 0.5s ease, visibility 0.5s ease;
-    font-family: 'DM Sans', sans-serif;
-}
-
-.upload-date-overlay.visible {
-    display: block;
-    opacity: 1;
-}
