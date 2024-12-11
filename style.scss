@@ -1,3 +1,46 @@
+// width of 1 scanline (min.: 1px)
+    $scan-width: 2px;
+
+    // emulates a damage-your-eyes bad pre-2000 CRT screen ♥ (true, false)
+    $scan-crt: true;
+
+    // frames-per-second (should be > 1), only applies if $scan-crt: true;
+    $scan-fps: 60;
+
+    // scanline-color (rgba)
+    $scan-color: rgba(#000, .3);
+
+    // set z-index on 8, like in ♥ 8-bits ♥, or…
+    // set z-index on 2147483648 or more to enable scanlines on Chrome fullscreen (doesn't work in Firefox or IE);
+    $scan-z-index: 2147483648; 
+
+/* MOVING SCANLINE SETTINGS */
+
+    // moving scanline (true, false)
+    $scan-moving-line: true;
+
+    // opacity of the moving scanline
+    $scan-opacity: .75;
+
+    /* MIXINS */
+
+    // apply CRT animation: @include scan-crt($scan-crt);
+    @mixin scan-crt($scan-crt) {
+        @if $scan-crt == true {
+            animation: scanlines 1s steps($scan-fps) infinite;
+        }
+        @else { animation: none; }
+    }
+
+    // apply CRT animation: @include scan-crt($scan-crt);
+    @mixin scan-moving($scan-moving-line) {
+        @if $scan-moving-line == true {
+            animation: scanline 6s linear infinite;
+        }
+        @else { animation: none; }
+    }
+
+
 /* Reset default margins and paddings */
 * {
     margin: 0;
@@ -40,10 +83,15 @@ body {
 
 /* Retro Filter Applied to Video */
 .retro-filter {
-    
     filter: sepia(.5) contrast(1.2) brightness(0.9) saturate(1.5) hue-rotate(-10deg) blur(0.5px);
     position: relative; /* Ensure positioning context for pseudo-element */
-   
+    background: repeating-linear-gradient(
+        to bottom,
+        rgba(212, 212, 212, 0.752)1px, /* Darker lines */
+        rgba(237, 235, 235, 0.805) 1px,
+        transparent 1px,
+        transparent 3px
+    );
 }
 
 
@@ -646,11 +694,10 @@ body {
 /* Time Bar Styles */
 .time-bar {
     display: flex;
-    
-    
-    padding: 10px 10px;
+    align-items: center;
+    padding: 10px 20px;
     background-color: rgba(78, 141, 216, 0.9); /* Semi-transparent dark blue */
-    border-bottom: 6px outset #ffffff; /* Gold border */
+    border-bottom: 2px solid #FFD700; /* Gold border */
     position: sticky;
     top: 0;
     z-index: 5;
@@ -658,33 +705,21 @@ body {
 }
 
 .time-block {
-  
+    flex: 1;
     text-align: center;
     color: #FFD700;
     font-size: 18px;
     margin: 0 5px;
-   width:33%;
+    width:22%;
     border-radius: 4px;
     transition: background-color 0.3s, transform 0.2s;
 }
 
 .time-block.current {
-
-    font-size: 18px;
+    border: 3px inset white;
     font-weight: bold;
     color:white;
-    width: 20%;
-    text-align: center;
- 
-   
 }
-.current-time { font-weight: bold;
-    color:white;
-    font-size: 18px;
-    width: 20%;
-    text-align: center;
-    }
-    
 
 .time-bar.hidden {
     display: none;
@@ -697,7 +732,7 @@ body {
     align-items: center;
     padding: 10px 20px;
     background-color: rgba(19, 45, 76, 0.9); /* Semi-transparent dark blue */
-    border-bottom: 6px solid #ffffff; /* Gold border */
+    border-bottom: 2px solid #FFD700; /* Gold border */
     position: sticky;
     top: 0;
     z-index: 6;
@@ -785,4 +820,62 @@ body {
 .upload-date-overlay.visible {
     display: block;
     opacity: 1;
+}
+
+
+.scanlines {
+    position: relative;
+    overflow: hidden; // only to animate the unique scanline
+
+    &:before,
+    &:after {
+        display: block;
+        pointer-events: none;
+        content: '';
+        position: absolute;
+    }
+
+    // unique scanline travelling on the screen
+    &:before {
+        // position: absolute;
+        // bottom: 100%;
+        width: 100%;
+        height: $scan-width * 1;
+        z-index: $scan-z-index + 1;
+        background: $scan-color;
+        opacity: $scan-opacity;
+        // animation: scanline 6s linear infinite;
+        @include scan-moving($scan-moving-line);
+    }
+
+    // the scanlines, so!
+    &:after {
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        z-index: $scan-z-index;
+        background: linear-gradient(
+            to bottom,
+            transparent 50%,
+            $scan-color 51%
+        );
+        background-size: 100% $scan-width*2;
+        @include scan-crt($scan-crt);
+    }  
+}
+
+/* ANIMATE UNIQUE SCANLINE */
+@keyframes scanline {
+    0% {
+        transform: translate3d(0,200000%,0);
+        // bottom: 0%; // to have a continuous scanline move, use this line (here in 0% step) instead of transform and write, in &:before, { position: absolute; bottom: 100%; }
+    }
+}
+
+@keyframes scanlines {
+    0% {
+        background-position: 0 50%;
+        // bottom: 0%; // to have a continuous scanline move, use this line (here in 0% step) instead of transform and write, in &:before, { position: absolute; bottom: 100%; }
+    }
 }
